@@ -1,0 +1,720 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic+Coding&display=swap" rel="stylesheet">
+
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<link rel="stylesheet" href="assets/css/main.css" />
+	<title>LRU 구현 프로그램</title>
+	<style>
+
+        html {
+            background-color : #f8f9fa;
+            background-size: cover;
+			margin:30px 120px;
+        }
+
+
+        body {
+			font-family: 'Nanum Gothic Coding', cursive;
+		}
+
+
+
+        #input-container {
+            margin-bottom: 20px;
+        }
+
+
+
+
+
+        .cache-container-wrapper {
+            display: flex;
+        }
+
+
+
+
+
+
+        .cache-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-right: 20px;
+        }
+
+
+
+
+
+
+
+        .cache-stack {
+            display: flex;
+            width: 60px;
+			height:50px;
+            background-color: #e0e0e0;
+            border: 1px solid #000;
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+
+
+
+
+
+        .cache-frame {
+            width: 100%;
+            height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #e0e0e0;
+            border-bottom: 1px solid #000;
+            transition: background-color 1s;
+        }
+
+
+
+
+
+        .cache-frame.highlight {
+            background-color: #ffcccb;
+            transition: background-color 1s;
+        }
+
+
+
+
+
+
+        .cache-frame.oldestIndex {
+            background-color: #a0e0a0;
+            transition: background-color 1s;
+        }
+
+
+
+
+
+
+
+        .description-container {
+            display: none;
+            border: 1px solid #000;
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+
+
+
+
+
+
+        #recent-page {
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+	
+
+
+        .method-buttons {
+            margin: 20px;
+        }
+
+
+
+
+        .method-button {
+			border: 2px solid skyblue;
+            background-color: rgba(0,0,0,0);
+            color: skyblue;
+            padding:5px;
+			border-radius:10px;
+			margin:10px;
+			font-size:25px;
+			height:80px;
+
+		}
+
+        .method-button:hover{
+			color:white;
+			background-color:skyblue;
+		}
+
+
+    </style>
+</head>
+	<body>
+		<!-- Banner -->
+			<section id="banner">
+				<h2><strong> LRU </strong>알고리즘은 <br>어떻게 구현될까?</h2>
+				<p>각기 다른 방법에 따른 알고리즘 구현 과정 프로그램</p>
+				<ul class="actions">
+					<li><a href="#" class="button special" id="lru-description-button" onclick="toggleDescription()">LRU 알고리즘이란?</a></li>
+					<li><a href="#" class="button special" onclick="toggleInputContainerAndSimulation()">시뮬레이션 하러가기</a></li>
+				</ul>
+			</section>
+
+			<div id="input-container" style="display: none; padding:35px;">
+				<p>
+					캐시 크기와 데이터를 입력하고 시뮬레이션 유형을 선택해주세요. 
+					<br>데이터는 숫자를 띄어쓰기로 구분해서 입력해주세요.
+					<ul>
+						<li><strong>스택 방법</strong>은 <span style ="color:#ffcccb">가장 최근의 데이터</span>를 분홍색으로 표현하고 <span style ="color:#a0e0a0">가장 오래된 데이터</span>를 초록색으로 표현합니다.</li>
+						<li><strong>카운터 방법</strong>은 <span style ="color:#a0e0a0">카운터 값이 가장 작은 </span>값중에서 가장 오래된 데이터의 페이지를 초록색으로 표시합니다.
+							<br> -이 프로그램에서는 데이터 옆에 괄호 안의 숫자로 카운터 값을 표기합니다. </li>
+						<li><strong>2차 기회 방법</strong>은 <span style ="color:#a0e0a0">참조 비트가 0인</span> 데이터 중에서 가장 오래된 데이터의 페이지를 초록색으로 표시합니다.
+							<br> -이 프로그램에서는 데이터 옆에 괄호 안의 숫자로 참조 비트 값을 표기합니다. </li>
+					</ul>    
+				</p>
+				<label for="cache-size">캐시 크기:</label>
+				<input type="number" id="cache-size" min="1" value="3">
+				<br>
+				<label for="data-input">데이터 입력 (숫자만):</label>
+				<input type="text" id="data-input">
+				<br>
+				<label for="simulation-type">시뮬레이션 유형:</label>
+				<select id="simulation-type">
+					<option value="stack">스택</option>
+					<option value="counter">카운터</option>
+					<option value="secondChance">2차 기회</option>
+				</select>
+				<br>
+				<button onclick="startSimulation()">시뮬레이션 시작</button>
+			</div>
+
+			<div style = "padding:35px;" class="description-container" id="lru-description">
+				<div class="inner">
+					<header class="major">
+						<h2>LRU 알고리즘이란?</h2>
+					</header>
+				</div>
+				<p>
+					LRU (Least Recently Used) 알고리즘은 메모리 공간을 전부 사용중일 때 어떤 데이터를 삭제하고 저장할 것인지를 결정하여 메모리 공간을 효율적으로
+					사용할 수 있게 하는 <b>페이지 교체 알고리즘</b> 중 하나입니다.<br>   
+					예를 들어 아래 그림과 같이 상자 안에 공간이 없는 상황에서 책을 넣어야할 때 <b>상자 속의 어떤 물건을 빼고
+					책을 넣을지 결정하는 과정</b>이라고 할 수 있습니다. <br>
+					<img src="./고민.jpg" width="600" height="300"> <br>이같은 페이지 교체 알고리즘 중 LRU 알고리즘은 <b>캐시에서 가장 오래 사용되지 않은 항목을 제거하는 알고리즘</b>입니다.<br>
+					노트북, 전공책, 테블릿 pc 중 가장 오랫동안 사용하지 않은 물건을 빼고 준비물을 넣는다는 것이죠!<br>
+					현대 소프트웨어에서 LRU 알고리즘을 구현하는 방법은 스택, 카운터, 2차 기회 알고리즘이 있으며 각자의 장점과 단점을 가지고있습니다.
+					<br>이 프로그램은 이 세 가지 방법을 통해 LRU 알고리즘이 진행되는 과정을 보여줍니다.
+					<br>다음 버튼을 클릭해 세 가지 방법을 더 자세하게 알아보세요!
+				</p>
+				<div class="method-buttons">
+					<button class="method-button"  onclick="showStackMethod()">스택 방법</button>
+					<button class="method-button"  onclick="showCounterMethod()">카운터 방법</button>
+					<button class="method-button"  onclick="showSecondChanceMethod()">2차 기회 방법</button>
+				</div>
+				<div id="stack-method" style="display: none;">
+					<h3><br><br><strong>스택 방법</strong></h3>
+					<p>스택 방법은 가장 최근에 사용된 페이지를 스택이라는 가상의 공간 위에 유지하는 방법입니다. <br>가장 위에 있는 페이지가 가장 최근에 사용된 페이지이고, 가장 아래에 있는 페이지가 오래된 페이지가 되도록 상태를 유지합니다.
+						페이지를 교체해야될 때 스택의 가장 위에 있는 데이터를 선택해서 바로 교체합니다. 구현과 처리 방식이 비교적 간단하다는 장점이 있지만, 평소에 자주 사용하는 데이터라도 중요도가 덜한 최신 데이터에게 우선순위가 밀릴 수 있다는 단점이 존재합니다.<br>     
+						다음은 예시를 통해 스택 방법 진행과정을 보여줍니다. <br><br>
+						<img src ="https://postfiles.pstatic.net/MjAyMzA5MThfNzIg/MDAxNjk1MDE5MDgzNDkz.tREcODWoYx9nHHJP9U_y4Q36AyksN3QUTu0sBwhLxHkg.4dm2CDoozbVvpW40FWy9WY4bBwR2juyM2D0bif2Fwo8g.JPEG.rlaqudtn10167/%EC%8A%A4%ED%83%9D_%EC%9E%85%EB%A0%A5.jpg?type=w966" width ="700" height ="400"> <br>
+						위 사진과 같이 데이터가 새로 입력되면 새로운 데이터가 기존 데이터 위에 쌓여지는 형태로 저장되게 됩니다.<br><br>
+						<img src ="https://postfiles.pstatic.net/MjAyMzA5MThfMTQ0/MDAxNjk1MDE5MDgzNTAx.iJyW0YuOJAF7m011wcohM63VpDlNThsdi6D3ZT12K1wg.WXNNJUhyh1tEp-QM1jkjVEX70Vs0ZvaYYHAz8ZYynCsg.JPEG.rlaqudtn10167/%EC%8A%A4%ED%83%9D_%EC%A0%95%EB%A0%AC.jpg?type=w966" width ="700" height ="400"><br>
+						위 사진과 같이 입력된 데이터가 이미 존재하는 경우 순서를 재배열합니다.<br>
+						<img src ="https://postfiles.pstatic.net/MjAyMzA5MThfMjE1/MDAxNjk1MDE5MDgzMTE4.3eyPaOoLpYF6Ke8EDfHYQl1hV3Hz9VzTTBJL9ZG9CWwg.bv1c_0FZ4ha1arlnW06wUUrxzb214iAi5o5LW1UlJKAg.JPEG.rlaqudtn10167/%EC%8A%A4%ED%83%9D_%EA%B5%90%EC%B2%B4.jpg?type=w966" width ="700" height ="400"><br>
+						위 사진과 같이 남은 저장공간이 없을 때 오래된 (가장 아래에 있는) 페이지를 제거하고 데이터를 입력한 뒤 재배열합니다. 
+					</p>
+				</div>
+				<div id="counter-method" style="display: none;">
+					<h3><br><br><strong>카운터 방법</strong></h>
+					<p>카운터 방법은 각 페이지에 연관된 카운터 값을 유지합니다. 페이지가 사용될 때마다 해당 데이터의 카운터를 증가시킵니다.
+						페이지를 교체해야될 때 카운터 값이 가장 낮은 데이터를 교체합니다. 만약 카운터 값이 가장 낮은 데이터가 여러개라면 그 데이터들 중 가장 오래된 데이터를 교체합니다. 
+						활용 빈도가 잦았던 데이터는 쉽게 우선순위에서 밀리지 않는다는 장점이 있지만, 카운터 값이 많이 증가되었던 데이터는 시간이 지나 사용하지 않는 데이터가 되더라도 페이지가 교체되지 않는다는 단점이 존재합니다.<br>
+						다음은 예시를 통해 스택 방법 진행과정을 보여줍니다.<br><br> 
+						<img src ="https://postfiles.pstatic.net/MjAyMzA5MThfMTQx/MDAxNjk1MDE5MDgzNTg2.D1HrhsFjWg9BaUHvCYvuQzqQRWZFST7pM-q84ai9inwg.WI9TxYF2IBFVx8SXCVNGHAg8ZkkAZJOKWzSfo0UkQtYg.JPEG.rlaqudtn10167/%EC%B9%B4%EC%9A%B4%ED%84%B0_%EA%B8%B0%EB%B3%B8.jpg?type=w966" width ="700" height ="400"> <br>
+						위 사진과 같이 각 페이지는 데이터에 대응하는 카운터 값을 가지고있습니다. 이는 초기에 데이터가 삽입될 때 증가한 1의 값을 지닙니다.<br><br> 
+						<img src ="https://postfiles.pstatic.net/MjAyMzA5MThfOTYg/MDAxNjk1MDE5MDgzNjIw.hNzC56iaGWuIKDRVAYKDxEZUa_zFZROi6m2vYeTRFTYg.DNLaIS7UGeIG8IxCd0C4CPVdNxhuccl06PYurOEdPg4g.JPEG.rlaqudtn10167/%EC%B9%B4%EC%9A%B4%ED%84%B0_%EC%A6%9D%EA%B0%80.jpg?type=w966" width ="700" height ="400"> <br>
+						위 사진과 같이 메모리에 존재했던 데이터가 다시 참조되는 경우에 대응하는 카운터 값을 1 증가시킵니다. <br><br> 
+						<img src ="https://postfiles.pstatic.net/MjAyMzA5MThfOTcg/MDAxNjk1MDE5MDgzNTYz.yWuoYgRGtDIsLrP2Erhl6_Y6J-qkuBM_9MjXYWwnzXUg.a8TbcoDoy6GPooGICsc_xCmp7X_WNBt4IPMR_xESiwUg.JPEG.rlaqudtn10167/%EC%B9%B4%EC%9A%B4%ED%84%B0_%EA%B5%90%EC%B2%B4.jpg?type=w966" width ="700" height ="400"> <br>
+						위 사진과 같이 메모리 공간이 부족한 상황에서 새로운 데이터가 입력될 경우 카운터 값이 가장 적은 페이지를 교체 대상으로 선정합니다.<br>
+						이 때 만약 카운터 값이 가장 적은 페이지가 여러개 존재할 경우에 가장 오래된 데이터를 가진 페이지를 교체합니다. <br><br> 
+						</p>				</div>
+				<div id="second-chance-method" style="display: none;">
+					<h3><br><br><strong>2차 기회 방법</strong></h3>
+					<p>2차 기회 방법은 스택의 단점과 카운터의 단점을 보완한 방법입니다. 각 데이터에 연관된 참조 비트를 유지합니다. 이 참조비트는 초기값이 0이고 데이터가 참조되면 1로 변경됩니다. 
+						가장 오래된 데이터를 우선적으로 교체 대상으로 선정하고 그 데이터의 참조 비트를 확인합니다. 만약 참조 비트가 0이면 해당 데이터의 페이지를 교체하는 것으로 결정하고, 참조 비트가 1이면 
+						참조 비트를 0으로 변경하고 다음으로 오래된 데이터를 교체 대상으로 선정하는 것을 반복하는 과정을 거쳐 알고리즘을 진행합니다. <br>
+						다음은 예시를 통해 스택 방법 진행과정을 보여줍니다.<br><br> 
+						<img src ="https://postfiles.pstatic.net/MjAyMzA5MThfNTEg/MDAxNjk1MDE5MDgzMTEw.VtPGKIcKirVQr3DuURkt69XbzIrhaOuYZpc5G71FL54g.VqGNWKgW1SKSdsZW-ExWO0FwlHC3ZScTDzclme0X13Qg.JPEG.rlaqudtn10167/2%EC%B0%A8_%EA%B8%B0%EB%B3%B8.jpg?type=w966" width ="700" height ="400"> <br>
+						 2차 기회 방법은 데이터에 대응하는 참조 비트를 가지고있습니다. 카운터와는 다르게 값이 계속해서 증가하지 않고 최대값이 1인 변수입니다.<br><br>
+						<img src ="https://postfiles.pstatic.net/MjAyMzA5MThfMjA0/MDAxNjk1MDE5MDgzMTI5.0K1iBlZIQ-juh_zF6_TUEAVBrGuGgegnGS6fdJt_BI8g.Tqpj9NWQhuNAKmAFSzTmgBlOEyieF4HH4tdXp9bj8Dgg.JPEG.rlaqudtn10167/2%EC%B0%A8_%EB%B3%80%EA%B2%BD_1.jpg?type=w966" width ="700" height ="400"> 
+						<img src ="https://postfiles.pstatic.net/MjAyMzA5MThfMTMg/MDAxNjk1MDE5MDgzMTI0.vmAPDbenmMmq8ov9QIL7UQiKFvI67HBj4yY-V1x-RA0g.HcI1dFzl9jwq1lFca0Q1eAy9d0T0mf13RjKhrdq-lAEg.JPEG.rlaqudtn10167/2%EC%B0%A8_%EB%B3%80%EA%B2%BD_2.jpg?type=w966" width ="700" height ="400"> <br>
+						메모리 공간이 부족할 때 가장 오래된 데이터의 페이지를 찾아서 교체 대상으로 선정합니다.<br>
+						만약 데이터의 참조 비트가 1일 경우, 참조 비트를 0으로 설정한 뒤 다음으로 오래된 데이터를 교체 대상으로 선정하는 과정을 반복합니다.<br>
+						모든 메모리를 확인했다면 처음으로 돌아가서 순서대로 확인하는 순환의 성격을 지닙니다.<br><br>
+						<img src ="https://postfiles.pstatic.net/MjAyMzA5MThfMjY3/MDAxNjk1MDE5MDgzMTA0.JvtXXKyBoErRcADRfHkF4EBG71YR01CDxQfsnl9lLSsg.gbUOelQwHbOYXseGyxn2oX-4ycqD7NI-rsrSPJHWHTsg.JPEG.rlaqudtn10167/2%EC%B0%A8_%EA%B5%90%EC%B2%B4.jpg?type=w966" width ="700" height ="400"> <br>
+						이 과정을 반복하다가 가장 오래되었고 참조비트가 0인 데이터를 발견한다면 해당 페이지를 교체합니다. 
+					 </p>				
+				</div>
+			</div>
+			<div class="cache-container-wrapper" id="cache-container-wrapper">
+			</div>
+			<div id="recent-page" magin="10px"> </div>
+		
+		
+
+			<script>
+				const cacheSizeInput = document.getElementById("cache-size");
+				const dataInput = document.getElementById("data-input");
+				const cacheContainerWrapper = document.getElementById("cache-container-wrapper");
+				const recentPageText = document.getElementById("recent-page");
+				const lruDescriptionButton = document.getElementById("lru-description-button");
+				const lruDescription = document.getElementById("lru-description");
+				const stackMethod = document.getElementById("stack-method");
+				const counterMethod = document.getElementById("counter-method");
+				const secondChanceMethod = document.getElementById("second-chance-method"); 
+				let cache = [];
+				let cacheSize = 5;
+		
+		
+				function createCacheFrames(container, data) {
+					container.innerHTML = "";
+					for (let i = 0; i < cacheSize; i++) {
+						const frame = document.createElement("div");
+						frame.className = "cache-stack";
+						frame.innerHTML = `<div class="cache-frame">${data[i] !== undefined ? data[i] : "-"}</div>`;
+						container.appendChild(frame);
+					}
+				}
+		
+		
+		
+		
+				function startSimulation() {
+					const simulationType = document.getElementById("simulation-type").value;
+				   
+					// 선택한 시뮬레이션 유형에 따라 해당 시뮬레이션 함수를 호출합니다.
+					if (simulationType === "stack") {
+						simulateStack();
+					} else if (simulationType === "counter") {
+						simulateCounter();
+					} else if (simulationType === "secondChance") {
+						simulateSecondChance();
+					} else {
+						alert("올바른 시뮬레이션 유형을 선택하세요.");
+					}
+				}
+
+
+			   
+				async function simulateStack() { // 함수를 async로 선언
+					
+					
+					recentPageText.style.margin = "0 35px";
+					cacheContainerWrapper.innerHTML = "";
+					recentPageText.innerText = "최근에 사용된 페이지: -";
+		
+		
+					cacheSize = parseInt(cacheSizeInput.value);
+					const data = dataInput.value.trim().split(/\s+/).map(Number);
+		
+		
+					if (isNaN(cacheSize) || cacheSize < 1) {
+						alert("캐시 크기는 1 이상이어야 합니다.");
+						return;
+					}
+		
+		
+					if (data.length === 0) {
+						alert("데이터를 입력하세요.");
+						return;
+					}
+				
+		
+					let prevData = [];
+					const parentContainer = document.createElement("div");
+					parentContainer.className = "cache-container-wrapper";
+					cacheContainerWrapper.appendChild(parentContainer);
+	
+		
+					for (const item of data) {
+					const cacheContainer = document.createElement("div");
+					cacheContainer.className = "cache-container";
+					cacheContainer.style.margin = "35px";
+					parentContainer.appendChild(cacheContainer);
+				
+		
+					cache = prevData.slice();
+					createCacheFrames(cacheContainer, cache);
+		
+		
+
+					const index = cache.findIndex(page => page === item);
+					if (index !== -1) {
+						cache.splice(index, 1);
+					} else if (cache.length >= cacheSize) {
+						cache.pop();
+					}
+		
+		
+		
+		
+					cache.unshift(item);
+		
+		
+		
+		
+					// 시각적으로 변경된 데이터를 강조합니다.
+					const frames = cacheContainer.querySelectorAll(".cache-frame");
+					frames[0].classList.add("highlight");
+					recentPageText.innerText = `최근에 사용된 페이지: ${item}`;
+		
+		
+		
+		
+					// 가장 오래된 데이터가 있는 페이지를 초록색으로 표시합니다.
+					const oldestIndex = cache.findIndex(page => page === cache[cache.length - 1]);
+					if (oldestIndex >= 0) {
+						frames[oldestIndex].classList.add("oldestIndex");
+					}
+		
+		
+		
+		
+					// 변경 사항을 적용한 후에 대기합니다.
+					await sleep(800); // 1초 대기
+		
+		
+		
+		
+					// 강조 클래스와 oldestIndex 클래스를 제거합니다.
+					frames[0].classList.remove("highlight");
+					if (oldestIndex >= 0) {
+						frames[oldestIndex].classList.remove("oldestIndex");
+					}
+		
+		
+		
+		
+					// 프레임 텍스트 갱신
+					createCacheFrames(cacheContainer, cache);
+		
+		
+		
+		
+					prevData = cache.slice();
+		
+		
+		
+		
+					await sleep(800); // 1초 대기
+					}
+				}  
+		
+
+
+
+				
+				async function simulateCounter() {
+					// HTML 요소를 가져와 변수에 저장합니다.
+					recentPageText.style.margin = "0 35px"; // 최근 페이지 텍스트 요소의 마진을 설정합니다.
+					cacheContainerWrapper.innerHTML = ""; // 캐시 컨테이너를 비웁니다.
+					recentPageText.innerText = "최근에 사용된 페이지: -"; // 최근 페이지 텍스트를 초기화합니다.
+
+					// 입력된 캐시 크기와 데이터를 가져와 변수에 저장합니다.
+					cacheSize = parseInt(cacheSizeInput.value);
+					const data = dataInput.value.trim().split(/\s+/).map(Number);
+
+					// 캐시 크기가 유효한지 검사하고 아니라면 알림을 띄우고 함수를 종료합니다.
+					if (isNaN(cacheSize) || cacheSize < 1) {
+						alert("캐시 크기는 1 이상이어야 합니다.");
+						return;
+					}
+
+					// 데이터가 비어있는지 확인하고 비어있다면 알림을 띄우고 함수를 종료합니다.
+					if (data.length === 0) {
+						alert("데이터를 입력하세요.");
+						return;
+					}
+
+					// 이전 데이터를 저장할 배열과 캐시 컨테이너를 생성하고 DOM에 추가합니다.
+					let prevData = [];
+					const parentContainer = document.createElement("div");
+					parentContainer.className = "cache-container-wrapper";
+					cacheContainerWrapper.appendChild(parentContainer);
+
+					// 페이지 카운트를 저장할 객체를 생성합니다.
+					const counters = {};
+
+					// 데이터 배열을 순회하며 캐시 시뮬레이션을 수행합니다.
+					for (const item of data) {
+						// 각 데이터 아이템을 표시할 캐시 컨테이너를 생성하고 DOM에 추가합니다.
+						const cacheContainer = document.createElement("div");
+						cacheContainer.className = "cache-container";
+						cacheContainer.style.margin = "35px";
+						parentContainer.appendChild(cacheContainer);
+
+						// 이전 데이터의 복사본을 만들고 캐시 프레임을 생성합니다.
+						prevData = prevData.slice();
+						createCacheFrames(cacheContainer, prevData);
+
+						// 현재 아이템이 이미 캐시에 존재하는지 확인하고 캐시에서 제거합니다.
+						const index = prevData.findIndex(page => page === item);
+						if (index !== -1) {
+						prevData.splice(index, 1);
+						} else if (prevData.length >= cacheSize) {
+						// 캐시가 가득 찼을 때, 가장 적게 사용된 데이터를 찾아서 교체합니다.
+						let minCount = Infinity;
+						let replaceIndexes = [];
+
+						for (let i = 0; i < prevData.length; i++) {
+							const currentPage = prevData[i];
+							if (counters[currentPage] < minCount) {
+							minCount = counters[currentPage];
+							replaceIndexes = [i];
+							} else if (counters[currentPage] === minCount) {
+							replaceIndexes.push(i);
+							}
+						}
+
+						// 교체할 데이터를 선택하고 이전 데이터에서 제거합니다.
+						replaceIndexes.sort((a, b) => a - b);
+						prevData.splice(replaceIndexes[0], 1);
+						}
+
+						// 현재 아이템을 캐시에 추가하고 카운터를 업데이트합니다.
+						prevData.push(item);
+						if (!counters[item]) {
+						counters[item] = 1;
+						} else {
+						counters[item]++;
+						}
+
+						// 캐시 컨테이너의 프레임들을 업데이트하고 가장 적게 사용된 데이터를 초록색으로 표시합니다.
+						const frames = cacheContainer.querySelectorAll(".cache-frame");
+						let minCounter = Infinity;
+						let minCounterIndex = -1;
+
+						for (let i = 0; i < prevData.length; i++) {
+						const currentPage = prevData[i];
+						if (counters[currentPage] < minCounter) {
+							minCounter = counters[currentPage];
+							minCounterIndex = i;
+						}
+						}
+
+						recentPageText.innerText = `최근에 사용된 페이지: ${item}`;
+
+						for (let i = 0; i < prevData.length; i++) {
+						const frame = frames[i];
+						frame.innerHTML = `<div class="cache-frame">${prevData[i]} (${counters[prevData[i]]})</div>`;
+						frame.style.fontSize = "15px";
+						}
+
+						// 가장 적게 사용된 데이터의 프레임을 초록색으로 표시한 후 잠시 기다립니다.
+						if (minCounterIndex >= 0) {
+						frames[minCounterIndex].querySelector(".cache-frame").style.backgroundColor = "#a0e0a0";
+						}
+						await sleep(800);
+
+						// 초록색 표시를 제거하고 잠시 기다립니다.
+						if (minCounterIndex >= 0) {
+						frames[minCounterIndex].querySelector(".cache-frame").style.backgroundColor = "";
+						}
+						await sleep(800);
+					}
+					}
+
+
+
+
+
+				async function simulateSecondChance() {
+					// 캐시 컨테이너 초기화 및 초기 메시지 설정
+					recentPageText.style.margin = "0 35px";
+					cacheContainerWrapper.innerHTML = "";
+					recentPageText.innerText = "최근에 사용된 페이지: -";
+
+					// 캐시 크기 및 데이터 입력
+					cacheSize = parseInt(cacheSizeInput.value);
+					const data = dataInput.value.trim().split(/\s+/).map(Number);
+
+					// 캐시 크기가 유효한지 확인
+					if (isNaN(cacheSize) || cacheSize < 1) {
+						alert("캐시 크기는 1 이상이어야 합니다.");
+						return;
+					}
+
+					// 데이터가 입력되었는지 확인
+					if (data.length === 0) {
+						alert("데이터를 입력하세요.");
+						return;
+					}
+
+					// 이전 데이터를 저장할 배열 초기화
+					let prevData = [];
+
+					// 캐시 컨테이너 생성 및 설정
+					const parentContainer = document.createElement("div");
+					parentContainer.className = "cache-container-wrapper";
+					cacheContainerWrapper.appendChild(parentContainer);
+
+					// 입력된 데이터를 반복하여 처리
+					for (const item of data) {
+						// 캐시 컨테이너 생성 및 설정
+						const cacheContainer = document.createElement("div");
+						cacheContainer.className = "cache-container";
+						cacheContainer.style.margin = "35px";
+						parentContainer.appendChild(cacheContainer);
+
+						// 이전 데이터의 복사본 생성
+						prevData = prevData.slice();
+
+						// 캐시 프레임 생성 함수 호출
+						createCacheFrames(cacheContainer, prevData);
+
+						// 현재 페이지가 캐시에 있는지 확인
+						const index = prevData.findIndex(page => page.data === item);
+
+						if (index !== -1) {
+							// 현재 페이지가 캐시에 있으면 참조 비트를 1로 설정
+							prevData[index].refBit = 1;
+						} else if (prevData.length >= cacheSize) {
+							// 캐시가 꽉 찼으면 페이지 교체를 수행
+							let replaced = false;
+							let currentIndex = 0;
+
+							while (!replaced) {
+								if (prevData[currentIndex].refBit === 0) {
+									// 참조 비트가 0인 페이지를 찾으면 교체 후 종료
+									prevData.splice(currentIndex, 1);
+									prevData.push({ data: item, refBit: 1 });
+									replaced = true;
+								} else {
+									// 참조 비트가 1인 페이지는 0으로 설정하고 다음 페이지로 이동
+									prevData[currentIndex].refBit = 0;
+									currentIndex = (currentIndex + 1) % prevData.length;
+								}
+							}
+						} else {
+							// 캐시에 여유가 있으면 페이지를 추가
+							prevData.push({ data: item, refBit: 1 });
+						}
+
+						// 가장 오래된 프레임을 찾음
+						let oldestIndex = 0;
+						for (let i = 1; i < prevData.length; i++) {
+							if (prevData[i].refBit < prevData[oldestIndex].refBit) {
+								oldestIndex = i;
+							}
+						}
+
+						// 캐시 프레임 업데이트
+						const frames = cacheContainer.querySelectorAll(".cache-frame");
+
+						// 최근 사용된 페이지 표시
+						recentPageText.innerText = `최근에 사용된 페이지: ${item}`;
+
+						for (let i = 0; i < prevData.length; i++) {
+							// 캐시 프레임에 데이터와 참조 비트를 표시
+							frames[i].innerHTML = `<div class="cache-frame" style ="font-size:15px;">${prevData[i].data} (${prevData[i].refBit})</div>`;
+						}
+
+						// 참조 비트가 0인 가장 오래된 프레임을 초록색으로 표시
+						frames[oldestIndex].querySelector(".cache-frame").style.backgroundColor = "#a0e0a0";
+
+						// 1초 대기
+						await sleep(800);
+
+						// 초록색 표시 제거
+						frames[oldestIndex].querySelector(".cache-frame").style.backgroundColor = "";
+
+						// 1초 대기
+						await sleep(800);
+					}
+				}
+
+
+
+				function toggleInputContainerAndSimulation() {
+					const inputContainer = document.getElementById("input-container");
+					const cacheContainerWrapper = document.getElementById("cache-container-wrapper");
+					const recentPageText = document.getElementById("recent-page");
+
+					// 입력 폼과 시뮬레이션을 함께 숨기거나 나타내기
+					if (inputContainer.style.display === "none" || inputContainer.style.display === "") {
+						inputContainer.style.display = "block";
+						cacheContainerWrapper.style.display = "block";
+						recentPageText.style.display = "block"; // "최근에 사용된 페이지" 텍스트 나타내기
+					} else {
+						inputContainer.style.display = "none";
+						cacheContainerWrapper.style.display = "none";
+						recentPageText.style.display = "none"; // "최근에 사용된 페이지" 텍스트 숨기기
+					}
+				}
+
+
+
+
+		
+					function toggleDescription() {
+						if (lruDescription.style.display === "none" || lruDescription.style.display === "") {
+							lruDescription.style.display = "block";
+						} else {
+							lruDescription.style.display = "none";
+						}
+				}
+		
+		
+		
+					// 스택 방법 버튼 클릭 시 이벤트 핸들러
+					function showStackMethod() {
+						stackMethod.style.display = "block";
+						counterMethod.style.display = "none";
+						secondChanceMethod.style.display = "none";
+		
+				}
+		
+		
+		
+		
+				function showCounterMethod() {
+					stackMethod.style.display = "none";
+					counterMethod.style.display = "block";
+					secondChanceMethod.style.display = "none";
+				}
+		
+		
+		
+		
+		
+		
+				function showSecondChanceMethod() {
+					stackMethod.style.display = "none";
+					counterMethod.style.display = "none";
+					secondChanceMethod.style.display = "block";
+				}
+		
+		
+		
+				function sleep(ms) {
+					return new Promise(resolve => setTimeout(resolve, ms));
+				}
+			</script>
+		
+
+		<section id="copyright" class="wrapper style2 special">
+			Site made with: 김병수</a>.
+		</section>
+
+		<!-- Scripts -->
+			<script src="assets/js/jquery.min.js"></script>
+			<script src="assets/js/skel.min.js"></script>
+			<script src="assets/js/util.js"></script>
+			<!--[if lte IE 8]><script src="assets/js/ie/respond.min.js"></script><![endif]-->
+			<script src="assets/js/main.js"></script>
+
+	</body>
+</html>
